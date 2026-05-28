@@ -49,7 +49,7 @@ export async function createPayment(data: PaymentFormData) {
     revalidatePath("/dashboard/payments");
     revalidatePath("/dashboard");
     return { data: payment };
-  } catch (e) {
+  } catch (e: unknown) {
     return { error: String(e) };
   }
 }
@@ -85,7 +85,7 @@ export async function getPayments(options?: {
     const { data, error, count } = await query;
     if (error) return { error: error.message };
     return { data, count };
-  } catch (e) {
+  } catch (e: unknown) {
     return { error: String(e) };
   }
 }
@@ -114,7 +114,7 @@ export async function getDashboardRevenue() {
     }
 
     return { data };
-  } catch (e) {
+  } catch (e: unknown) {
     return { error: String(e) };
   }
 }

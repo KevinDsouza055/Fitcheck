@@ -62,7 +62,7 @@ export function Sidebar({ user, notifCount = 0, memberUsage }: SidebarProps) {
 
       {/* Nav */}
       <nav className="flex-1 px-2.5 py-2 overflow-y-auto scrollbar-thin">
-        {NAV.map(({ href, emoji, label }) => {
+        {NAV.map(({ href, emoji, label }: { href: string; emoji: string; label: string }) => {
           const isActive = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
           const isNotif = href === "/dashboard/notifications" && notifCount > 0;
 
@@ -112,8 +112,8 @@ export function Sidebar({ user, notifCount = 0, memberUsage }: SidebarProps) {
       <div className="px-3.5 py-3 border-t border-[#141B2A]">
         <div className="flex items-center gap-2.5">
           <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ring-2"
-            style={{ background: avatarColor + "22", color: avatarColor, ringColor: avatarColor + "44" }}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+            style={{ background: avatarColor + "22", color: avatarColor, boxShadow: `0 0 0 2px ${avatarColor}44` }}
           >
             {getInitials(user.name)}
           </div>

@@ -2,13 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { toast } from "sonner";
 import { createMember, deleteMember, renewMember } from "@/lib/actions/members";
 import { formatCurrency, formatDate, getInitials, getAvatarColor, getMemberStatusColor, downloadCSV } from "@/lib/utils";
-import type { Member, MembershipPlan } from "@/types";
+import type { Member, MembershipPlan, MemberFormData } from "@/types";
 
 interface Props {
-  members: (Member & { membership_plan?: any; branch?: any })[];
+  members: (Member & { membership_plan?: MembershipPlan; branch?: { name: string } })[];
   total: number;
   plans: MembershipPlan[];
   gymId: string;
@@ -22,7 +23,7 @@ export function MembersClient({ members, total, plans, gymId, initialStatus, ini
   const router = useRouter();
   const [view, setView] = useState<"grid" | "table">("grid");
   const [showAdd, setShowAdd] = useState(initialAction === "add");
-  const [selectedMember, setSelectedMember] = useState<any>(null);
+  const [selectedMember, setSelectedMember] = useState<(Member & { membership_plan?: MembershipPlan; branch?: { name: string } }) | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function navigate(updates: Record<string, string>) {
@@ -139,10 +140,14 @@ export function MembersClient({ members, total, plans, gymId, initialStatus, ini
                 onClick={() => router.push(`/dashboard/members/${m.id}`)}>
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-full flex items-center justify-center font-bold ring-2 flex-shrink-0"
-                      style={{ background: color + "22", color, ringColor: color + "44" }}>
+                    <div className="w-11 h-11 rounded-full flex items-center justify-center font-bold flex-shrink-0"
+                      style={{
+                        background: color + "22",
+                        color,
+                        boxShadow: `0 0 0 2px ${color}44`,
+                      }}>
                       {m.photo_url
-                        ? <img src={m.photo_url} alt={m.name} className="w-full h-full rounded-full object-cover" />
+                        ? <Image src={m.photo_url} alt={m.name} width={44} height={44} className="rounded-full object-cover" />
                         : getInitials(m.name)}
                     </div>
                     <div>
@@ -261,6 +266,14 @@ function AddMemberModal({ plans, gymId, onClose }: { plans: MembershipPlan[]; gy
 
   const set = (k: string, v: string) => setFormData((p) => ({ ...p, [k]: v }));
 
+  const formFields: [string, string, string, string][] = [
+    ["name", "Full Name *", "text", "Arjun Sharma"],
+    ["phone", "Phone *", "tel", "+91 98765 43210"],
+    ["email", "Email", "email", "arjun@gmail.com"],
+    ["emergency_name", "Emergency Contact Name", "text", ""],
+    ["emergency_phone", "Emergency Contact Phone", "tel", ""],
+  ];
+
   async function handleSubmit() {
     startTransition(async () => {
       const res = await createMember({
@@ -272,7 +285,7 @@ function AddMemberModal({ plans, gymId, onClose }: { plans: MembershipPlan[]; gy
         emergency_contact_name: formData.emergency_name,
         emergency_contact_phone: formData.emergency_phone,
         notes: formData.notes,
-      } as any);
+      } as MemberFormData);
 
       if (res.error) { toast.error(res.error); return; }
       toast.success(`${formData.name} added successfully! 🎉`);
@@ -301,13 +314,7 @@ function AddMemberModal({ plans, gymId, onClose }: { plans: MembershipPlan[]; gy
 
           {step === 1 && (
             <div className="space-y-4">
-              {[
-                ["name", "Full Name *", "text", "Arjun Sharma"],
-                ["phone", "Phone *", "tel", "+91 98765 43210"],
-                ["email", "Email", "email", "arjun@gmail.com"],
-                ["emergency_name", "Emergency Contact Name", "text", ""],
-                ["emergency_phone", "Emergency Contact Phone", "tel", ""],
-              ].map(([k, label, type, ph]) => (
+              {formFields.map(([k, label, type, ph]) => (
                 <div key={k}>
                   <label className="block text-xs font-semibold text-muted-foreground mb-1.5">{label}</label>
                   <input type={type} placeholder={ph} value={formData[k] ?? ""} onChange={(e) => set(k, e.target.value)}
@@ -387,7 +394,7 @@ function AddMemberModal({ plans, gymId, onClose }: { plans: MembershipPlan[]; gy
   );
 }
 
-function RenewModal({ member, plans, onClose }: { member: any; plans: MembershipPlan[]; onClose: () => void }) {
+function RenewModal({ member, plans, onClose }: { member: Member; plans: MembershipPlan[]; onClose: () => void }) {
   const [planId, setPlanId] = useState(member.membership_plan_id ?? "");
   const [method, setMethod] = useState("cash");
   const [isPending, startTransition] = useTransition();

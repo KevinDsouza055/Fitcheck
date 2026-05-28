@@ -5,18 +5,27 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { createClient } from "@/lib/supabase/client";
 import { getInitials, getAvatarColor } from "@/lib/utils";
-import type { Member } from "@/types";
 
 interface TopbarProps {
   title: string;
   gymId: string;
 }
 
+type MemberSearchResult = {
+  id: string;
+  name: string;
+  phone: string;
+  status: string;
+  membership_plan?: {
+    name: string;
+  }[];
+};
+
 export function Topbar({ title, gymId }: TopbarProps) {
   const { theme, setTheme } = useTheme();
   const router = useRouter();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<Member[]>([]);
+  const [results, setResults] = useState<MemberSearchResult[]>([]);
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
@@ -30,7 +39,7 @@ export function Topbar({ title, gymId }: TopbarProps) {
         .eq("gym_id", gymId)
         .or(`name.ilike.%${query}%,phone.ilike.%${query}%`)
         .limit(5);
-      setResults((data as Member[]) ?? []);
+      setResults((data as MemberSearchResult[]) ?? []);
       setShowResults(true);
     }, 200);
     return () => clearTimeout(t);
@@ -72,7 +81,7 @@ export function Topbar({ title, gymId }: TopbarProps) {
 
         {showResults && results.length > 0 && (
           <div className="absolute top-full mt-1.5 left-0 right-0 bg-card border border-border rounded-xl shadow-2xl overflow-hidden z-50">
-            {results.map((m) => (
+            {results.map((m: MemberSearchResult) => (
               <button
                 key={m.id}
                 onClick={() => { router.push(`/dashboard/members/${m.id}`); setShowResults(false); setQuery(""); }}

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { AnalyticsClient } from "@/components/analytics/analytics-client";
+import type { Payment, Member, Attendance, Gym } from "@/types";
 
 export const metadata = { title: "Analytics" };
 
@@ -8,7 +9,7 @@ export default async function AnalyticsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   const { data: gymUser } = await supabase.from("gym_users").select("gym_id, gym:gyms(saas_plan)").eq("auth_id", user!.id).single();
   const gymId = gymUser!.gym_id as string;
-  const saas_plan = (gymUser?.gym as any)?.saas_plan ?? "starter";
+  const saas_plan = (gymUser?.gym as unknown as Gym)?.saas_plan ?? "starter";
 
   const eightMonthsAgo = new Date(); eightMonthsAgo.setMonth(eightMonthsAgo.getMonth() - 7); eightMonthsAgo.setDate(1);
 
@@ -20,13 +21,13 @@ export default async function AnalyticsPage() {
 
   // Build monthly revenue
   const monthMap: Record<string, { revenue: number; members: number; churn: number }> = {};
-  (payments ?? []).forEach((p) => {
+  (payments as unknown as Payment[] ?? []).forEach((p) => {
     if (!p.payment_date) return;
     const key = new Date(p.payment_date).toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
     if (!monthMap[key]) monthMap[key] = { revenue: 0, members: 0, churn: 0 };
     monthMap[key].revenue += p.final_amount;
   });
-  (members ?? []).forEach((m) => {
+  (members as unknown as Member[] ?? []).forEach((m) => {
     const key = new Date(m.created_at).toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
     if (monthMap[key]) monthMap[key].members++;
     if (m.status === "expired") {
@@ -40,7 +41,7 @@ export default async function AnalyticsPage() {
   // Attendance heatmap
   const heatmap: Record<string, Record<number, number>> = {};
   const dayNames = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-  (attendance ?? []).forEach((a) => {
+  (attendance as unknown as Attendance[] ?? []).forEach((a) => {
     const d = new Date(a.check_in_time);
     const day = dayNames[d.getDay()];
     const hour = d.getHours();

@@ -5,11 +5,16 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { formatCurrency } from "@/lib/utils";
+import type { MembershipPlan } from "@/types";
 
-export function PlansClient({ plans, gymId, canManage }: { plans: any[]; gymId: string; canManage: boolean }) {
+type PlanWithMembers = MembershipPlan & {
+  members?: { count: number }[];
+};
+
+export function PlansClient({ plans, gymId, canManage }: { plans: PlanWithMembers[]; gymId: string; canManage: boolean }) {
   const router = useRouter();
   const [showCreate, setShowCreate] = useState(false);
-  const [editPlan, setEditPlan] = useState<any>(null);
+  const [editPlan, setEditPlan] = useState<PlanWithMembers | null>(null);
   const [isPending, startTransition] = useTransition();
 
   async function handleToggle(id: string, current: boolean) {
@@ -118,7 +123,7 @@ export function PlansClient({ plans, gymId, canManage }: { plans: any[]; gymId: 
   );
 }
 
-function PlanModal({ plan, gymId, onClose }: { plan?: any; gymId: string; onClose: () => void }) {
+function PlanModal({ plan, gymId, onClose }: { plan?: PlanWithMembers | null; gymId: string; onClose: () => void }) {
   const [isPending, startTransition] = useTransition();
   const [form, setForm] = useState({
     name: plan?.name ?? "",
@@ -138,11 +143,14 @@ function PlanModal({ plan, gymId, onClose }: { plan?: any; gymId: string; onClos
       const data = {
         gym_id: gymId,
         name: form.name,
-        duration: form.duration as any,
+        duration: form.duration as MembershipPlan["duration"],
         duration_days: parseInt(form.duration_days),
         price: parseFloat(form.price),
         color: form.color,
-        features: form.features.split("\n").map((f) => f.trim()).filter(Boolean),
+        features: form.features
+          .split("\n")
+          .map((f: string) => f.trim())
+          .filter(Boolean),
         description: form.description,
       };
       if (plan) {

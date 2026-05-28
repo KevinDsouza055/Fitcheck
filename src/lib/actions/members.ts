@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { computeExpiryDate } from "@/lib/utils";
-import type { MemberFormData } from "@/types";
+import type { MemberFormData, Member } from "@/types";
 
 async function getGymId() {
   const supabase = await createClient();
@@ -70,12 +70,15 @@ export async function createMember(data: MemberFormData) {
 
     revalidatePath("/dashboard/members");
     return { data: member };
-  } catch (e) {
+  } catch (e: unknown) {
     return { error: String(e) };
   }
 }
 
-export async function updateMember(id: string, data: Partial<MemberFormData>) {
+export async function updateMember(
+  id: string,
+  data: Partial<MemberFormData & { status: Member["status"] }>
+) {
   try {
     const { gymId, userId, supabase } = await getGymId();
 
@@ -101,7 +104,7 @@ export async function updateMember(id: string, data: Partial<MemberFormData>) {
     revalidatePath("/dashboard/members");
     revalidatePath(`/dashboard/members/${id}`);
     return { data: member };
-  } catch (e) {
+  } catch (e: unknown) {
     return { error: String(e) };
   }
 }
@@ -135,7 +138,7 @@ export async function deleteMember(id: string) {
 
     revalidatePath("/dashboard/members");
     return { success: true };
-  } catch (e) {
+  } catch (e: unknown) {
     return { error: String(e) };
   }
 }
@@ -205,7 +208,7 @@ export async function renewMember(
     revalidatePath(`/dashboard/members/${memberId}`);
     revalidatePath("/dashboard/payments");
     return { success: true, new_expiry: newExpiry };
-  } catch (e) {
+  } catch (e: unknown) {
     return { error: String(e) };
   }
 }
@@ -241,7 +244,7 @@ export async function getMembers(options?: {
     const { data, error, count } = await query;
     if (error) return { error: error.message };
     return { data, count };
-  } catch (e) {
+  } catch (e: unknown) {
     return { error: String(e) };
   }
 }
@@ -259,7 +262,7 @@ export async function getMember(id: string) {
 
     if (error) return { error: error.message };
     return { data };
-  } catch (e) {
+  } catch (e: unknown) {
     return { error: String(e) };
   }
 }
@@ -285,7 +288,7 @@ export async function checkInMember(memberId: string, branchId?: string) {
 
     revalidatePath("/dashboard/attendance");
     return { data };
-  } catch (e) {
+  } catch (e: unknown) {
     return { error: String(e) };
   }
 }

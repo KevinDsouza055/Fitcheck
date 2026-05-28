@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
 import QRCode from "react-qr-code";
@@ -10,8 +11,8 @@ import { formatCurrency, formatDate, formatRelativeTime, getInitials, getAvatarC
 import type { Member, Payment, Attendance, MembershipPlan } from "@/types";
 
 interface Props {
-  member: Member & { membership_plan?: MembershipPlan; branch?: any };
-  payments: (Payment & { membership_plan?: any })[];
+  member: Member & { membership_plan?: MembershipPlan; branch?: { name: string } };
+  payments: (Payment & { membership_plan?: { name: string } })[];
   attendance: Attendance[];
   plans: MembershipPlan[];
 }
@@ -38,6 +39,23 @@ export function MemberProfileClient({ member, payments, attendance, plans }: Pro
     : 30;
   const attendanceRate = totalDays > 0 ? Math.min(Math.round((attendance.length / Math.max(totalDays / 7, 1)) * 100), 100) : 0;
 
+  const personalInfo: [string, string, string | null][] = [
+    ["📱", "Phone", member.phone],
+    ["📧", "Email", member.email ?? "—"],
+    ["🎂", "Date of Birth", member.date_of_birth ? formatDate(member.date_of_birth) : "—"],
+    ["⚥", "Gender", member.gender ?? "—"],
+    ["🩸", "Blood Group", member.blood_group ?? "—"],
+    ["📍", "Address", member.address ?? "—"],
+    ["🆘", "Emergency Contact", member.emergency_contact_name ? `${member.emergency_contact_name} · ${member.emergency_contact_phone ?? ""}` : "—"],
+  ];
+
+  const fitnessStats: [string, string][] = [
+    ["Height", member.height_cm ? `${member.height_cm} cm` : "—"],
+    ["Weight", member.weight_kg ? `${member.weight_kg} kg` : "—"],
+    ["Goal", member.fitness_goal ?? "—"],
+    ["Attendance Rate", `${attendanceRate}%`],
+  ];
+
   async function handleDelete() {
     if (!confirm(`Permanently delete ${member.name}? This cannot be undone.`)) return;
     startTransition(async () => {
@@ -58,7 +76,7 @@ export function MemberProfileClient({ member, payments, attendance, plans }: Pro
 
   async function handleStatusChange(status: string) {
     startTransition(async () => {
-      const res = await updateMember(member.id, { status: status as any });
+      const res = await updateMember(member.id, { status: status as Member["status"] });
       if (res.error) toast.error(res.error);
       else { toast.success("Status updated"); router.refresh(); }
     });
@@ -77,10 +95,10 @@ export function MemberProfileClient({ member, payments, attendance, plans }: Pro
       <div className="bg-card border border-border rounded-2xl p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-black ring-4 flex-shrink-0"
-              style={{ background: color + "22", color, ringColor: color + "33" }}>
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-black flex-shrink-0"
+              style={{ background: color + "22", color, boxShadow: `0 0 0 4px ${color}33` }}>
               {member.photo_url
-                ? <img src={member.photo_url} alt={member.name} className="w-full h-full rounded-2xl object-cover" />
+                ? <Image src={member.photo_url} alt={member.name} width={64} height={64} className="rounded-2xl object-cover" />
                 : getInitials(member.name)}
             </div>
             <div>
@@ -139,15 +157,7 @@ export function MemberProfileClient({ member, payments, attendance, plans }: Pro
           <div className="bg-card border border-border rounded-2xl p-5">
             <h3 className="text-sm font-bold text-foreground mb-4">Personal Information</h3>
             <div className="space-y-3">
-              {[
-                ["📱", "Phone", member.phone],
-                ["📧", "Email", member.email ?? "—"],
-                ["🎂", "Date of Birth", member.date_of_birth ? formatDate(member.date_of_birth) : "—"],
-                ["⚥", "Gender", member.gender ?? "—"],
-                ["🩸", "Blood Group", member.blood_group ?? "—"],
-                ["📍", "Address", member.address ?? "—"],
-                ["🆘", "Emergency Contact", member.emergency_contact_name ? `${member.emergency_contact_name} · ${member.emergency_contact_phone ?? ""}` : "—"],
-              ].map(([icon, label, val]) => (
+              {personalInfo.map(([icon, label, val]) => (
                 <div key={label} className="flex items-center gap-3 py-2.5 border-b border-border last:border-0">
                   <span className="text-base w-5 flex-shrink-0">{icon}</span>
                   <span className="text-xs text-muted-foreground w-32 flex-shrink-0">{label}</span>
@@ -162,12 +172,7 @@ export function MemberProfileClient({ member, payments, attendance, plans }: Pro
             <div className="bg-card border border-border rounded-2xl p-5">
               <h3 className="text-sm font-bold text-foreground mb-4">Fitness Profile</h3>
               <div className="grid grid-cols-2 gap-3">
-                {[
-                  ["Height", member.height_cm ? `${member.height_cm} cm` : "—"],
-                  ["Weight", member.weight_kg ? `${member.weight_kg} kg` : "—"],
-                  ["Goal", member.fitness_goal ?? "—"],
-                  ["Attendance Rate", `${attendanceRate}%`],
-                ].map(([l, v]) => (
+                {fitnessStats.map(([l, v]) => (
                   <div key={l} className="bg-background rounded-xl p-3">
                     <div className="text-xs text-muted-foreground">{l}</div>
                     <div className="text-sm font-bold text-foreground mt-0.5">{v}</div>
@@ -332,7 +337,7 @@ function EditMemberModal({ member, onClose }: { member: Member; onClose: () => v
         ...form,
         height_cm: form.height_cm ? parseFloat(form.height_cm) : undefined,
         weight_kg: form.weight_kg ? parseFloat(form.weight_kg) : undefined,
-      } as any);
+      } as Partial<Member>);
       if (res.error) toast.error(res.error);
       else { toast.success("Member updated"); onClose(); }
     });
@@ -360,12 +365,12 @@ function EditMemberModal({ member, onClose }: { member: Member; onClose: () => v
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-xl">×</button>
         </div>
         <div className="p-6 grid grid-cols-2 gap-4">
-          {fields.map(([k, label, type, ph]) => (
+          {fields.map(([k, label, type, ph]: [string, string, string, string]) => (
             <div key={k} className={k === "address" || k === "fitness_goal" ? "col-span-2" : ""}>
               <label className="block text-xs font-semibold text-muted-foreground mb-1.5">{label}</label>
               <input
                 type={type} placeholder={ph}
-                value={(form as any)[k]} onChange={(e) => set(k, e.target.value)}
+                value={(form as Record<string, string>)[k]} onChange={(e) => set(k, e.target.value)}
                 className="w-full px-3 py-2.5 bg-background border border-border rounded-lg text-sm text-foreground outline-none focus:border-orange-500 transition-colors"
               />
             </div>

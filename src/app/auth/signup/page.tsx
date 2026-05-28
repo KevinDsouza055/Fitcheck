@@ -46,7 +46,7 @@ export default function SignupPage() {
               { name: "email", label: "Email", type: "email", placeholder: "rahul@ironnation.in" },
               { name: "password", label: "Password", type: "password", placeholder: "Min. 8 characters" },
               { name: "confirm_password", label: "Confirm Password", type: "password", placeholder: "••••••••" },
-            ].map((f) => (
+            ].map((f: { name: string; label: string; type: string; placeholder: string }) => (
               <div key={f.name}>
                 <label className="block text-sm font-semibold text-muted-foreground mb-1.5">{f.label}</label>
                 <input

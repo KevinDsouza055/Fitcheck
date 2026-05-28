@@ -5,14 +5,19 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createPayment } from "@/lib/actions/payments";
 import { formatCurrency, formatDate, formatRelativeTime, getInitials, getAvatarColor, downloadCSV } from "@/lib/utils";
-import type { MembershipPlan } from "@/types";
+import type { Member, Payment, MembershipPlan, PaymentFormData } from "@/types";
+
+type PaymentWithDetails = Payment & { 
+  member: { name: string; phone: string; photo_url: string | null }; 
+  membership_plan: { name: string } | null 
+};
 
 interface Props {
-  payments: any[];
+  payments: PaymentWithDetails[];
   total: number;
   monthRevenue: number;
   pendingDues: number;
-  members: any[];
+  members: Member[];
   plans: MembershipPlan[];
   gymId: string;
   initialStatus: string;
@@ -163,7 +168,7 @@ export function PaymentsClient({ payments, total, monthRevenue, pendingDues, mem
   );
 }
 
-function AddPaymentModal({ members, plans, gymId, onClose }: { members: any[]; plans: MembershipPlan[]; gymId: string; onClose: () => void }) {
+function AddPaymentModal({ members, plans, gymId, onClose }: { members: Member[]; plans: MembershipPlan[]; gymId: string; onClose: () => void }) {
   const [isPending, startTransition] = useTransition();
   const [form, setForm] = useState({
     member_id: "", membership_plan_id: "", amount: "", discount: "0",
@@ -182,7 +187,7 @@ function AddPaymentModal({ members, plans, gymId, onClose }: { members: any[]; p
         membership_plan_id: form.membership_plan_id || undefined,
         amount: parseFloat(form.amount),
         discount: parseFloat(form.discount || "0"),
-        payment_method: form.payment_method as any,
+        payment_method: form.payment_method as PaymentFormData["payment_method"],
         payment_date: form.payment_date,
         notes: form.notes || undefined,
       });
